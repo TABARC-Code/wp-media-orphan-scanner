@@ -8,6 +8,9 @@
  * Author URI: https://github.com/TABARC-Code
  * License: GPL-3.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
+ * Text Domain: wp-media-orphan-scanner
+ * Requires at least: 6.0
+ * Requires PHP: 7.4
  *
  * Why this exists:
  * The uploads folder always ends up as a landfill. Old images, unused PDFs, attachments from deleted posts,
@@ -69,9 +72,7 @@ if ( ! class_exists( 'WP_Media_Orphan_Scanner' ) ) {
             <div class="wrap">
                 <h1><?php esc_html_e( 'Media Orphan Scanner', 'wp-media-orphan-scanner' ); ?></h1>
                 <p>
-                    This looks at a slice of the media library and asks a simple question:
-                    which attachments look like they are not pulling their weight any more.
-                    It will not delete anything. You still take the final swing.
+                    <?php esc_html_e( 'This looks at a slice of the media library and asks a simple question: which attachments look like they are not pulling their weight any more. It will not delete anything. You still take the final swing.', 'wp-media-orphan-scanner' ); ?>
                 </p>
 
                 <h2><?php esc_html_e( 'Summary', 'wp-media-orphan-scanner' ); ?></h2>
@@ -79,22 +80,19 @@ if ( ! class_exists( 'WP_Media_Orphan_Scanner' ) ) {
 
                 <h2><?php esc_html_e( 'Attachments with missing files', 'wp-media-orphan-scanner' ); ?></h2>
                 <p>
-                    These attachments have a database record but the file is missing from disk.
-                    Users will hit broken images or downloads if you link to them.
+                    <?php esc_html_e( 'These attachments have a database record but the file is missing from disk. Users will hit broken images or downloads if you link to them.', 'wp-media-orphan-scanner' ); ?>
                 </p>
                 <?php $this->render_missing_files( $scan ); ?>
 
                 <h2><?php esc_html_e( 'Unattached attachments', 'wp-media-orphan-scanner' ); ?></h2>
                 <p>
-                    These are attachments with no post_parent. Some may be used in content,
-                    some may be genuine orphans. This list is a starting point, not a hit list.
+                    <?php esc_html_e( 'These are attachments with no post_parent. Some may be used in content, some may be genuine orphans. This list is a starting point, not a hit list.', 'wp-media-orphan-scanner' ); ?>
                 </p>
                 <?php $this->render_unattached( $scan ); ?>
 
                 <h2><?php esc_html_e( 'Likely unused attachments', 'wp-media-orphan-scanner' ); ?></h2>
                 <p>
-                    These attachments are unattached and do not appear in post content or postmeta by URL.
-                    The detection is conservative but not perfect. Always check before deleting.
+                    <?php esc_html_e( 'These attachments are unattached and do not appear in post content or postmeta by URL. The detection is conservative but not perfect. Always check before deleting.', 'wp-media-orphan-scanner' ); ?>
                 </p>
                 <?php $this->render_unused( $scan ); ?>
 
@@ -239,7 +237,8 @@ if ( ! class_exists( 'WP_Media_Orphan_Scanner' ) ) {
             $meta_hits = (int) $wpdb->get_var(
                 $wpdb->prepare(
                     "SELECT COUNT(*) FROM {$wpdb->postmeta}
-                     WHERE meta_value LIKE %s",
+                     WHERE post_id <> %d AND meta_value LIKE %s",
+                    $attachment_id,
                     $like_url
                 )
             );
@@ -252,13 +251,27 @@ if ( ! class_exists( 'WP_Media_Orphan_Scanner' ) ) {
                 $meta_hits_loose = (int) $wpdb->get_var(
                     $wpdb->prepare(
                         "SELECT COUNT(*) FROM {$wpdb->postmeta}
-                         WHERE meta_value LIKE %s",
+                         WHERE post_id <> %d AND meta_value LIKE %s",
+                        $attachment_id,
                         $like_basename
                     )
                 );
                 if ( $meta_hits_loose > 0 ) {
                     return false;
                 }
+            }
+
+            // Featured images are stored by ID, not URL, so check for that too.
+            $thumb_hits = (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$wpdb->postmeta}
+                     WHERE meta_key = '_thumbnail_id' AND meta_value = %s",
+                    (string) (int) $attachment_id
+                )
+            );
+
+            if ( $thumb_hits > 0 ) {
+                return false;
             }
 
             return true;
@@ -308,7 +321,7 @@ if ( ! class_exists( 'WP_Media_Orphan_Scanner' ) ) {
             }
 
             echo '<table class="widefat striped"><thead>';
-            echo '<tr><th>ID</th><th>Title</th><th>Mime type</th><th>Stored path</th><th>URL</th></tr>';
+            echo '<tr><th>' . esc_html__( 'ID', 'wp-media-orphan-scanner' ) . '</th><th>' . esc_html__( 'Title', 'wp-media-orphan-scanner' ) . '</th><th>' . esc_html__( 'Mime type', 'wp-media-orphan-scanner' ) . '</th><th>' . esc_html__( 'Stored path', 'wp-media-orphan-scanner' ) . '</th><th>' . esc_html__( 'URL', 'wp-media-orphan-scanner' ) . '</th></tr>';
             echo '</thead><tbody>';
 
             foreach ( $rows as $row ) {
@@ -336,7 +349,7 @@ if ( ! class_exists( 'WP_Media_Orphan_Scanner' ) ) {
             }
 
             echo '<table class="widefat striped"><thead>';
-            echo '<tr><th>ID</th><th>Title</th><th>Mime type</th><th>URL</th></tr>';
+            echo '<tr><th>' . esc_html__( 'ID', 'wp-media-orphan-scanner' ) . '</th><th>' . esc_html__( 'Title', 'wp-media-orphan-scanner' ) . '</th><th>' . esc_html__( 'Mime type', 'wp-media-orphan-scanner' ) . '</th><th>' . esc_html__( 'URL', 'wp-media-orphan-scanner' ) . '</th></tr>';
             echo '</thead><tbody>';
 
             foreach ( $rows as $row ) {
@@ -363,7 +376,7 @@ if ( ! class_exists( 'WP_Media_Orphan_Scanner' ) ) {
             }
 
             echo '<table class="widefat striped"><thead>';
-            echo '<tr><th>ID</th><th>Title</th><th>Mime type</th><th>URL</th></tr>';
+            echo '<tr><th>' . esc_html__( 'ID', 'wp-media-orphan-scanner' ) . '</th><th>' . esc_html__( 'Title', 'wp-media-orphan-scanner' ) . '</th><th>' . esc_html__( 'Mime type', 'wp-media-orphan-scanner' ) . '</th><th>' . esc_html__( 'URL', 'wp-media-orphan-scanner' ) . '</th></tr>';
             echo '</thead><tbody>';
 
             foreach ( $rows as $row ) {
