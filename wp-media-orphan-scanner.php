@@ -392,7 +392,7 @@ if ( ! class_exists( 'WP_Media_Orphan_Scanner' ) ) {
                     width: 18px;
                     height: 18px;
                     margin-right: 6px;
-                    background-image: url('<?php echo $icon_url; ?>');
+                    background-image: url('<?php echo esc_url( $icon_url ); ?>');
                     background-repeat: no-repeat;
                     background-size: contain;
                 }
